@@ -23,13 +23,20 @@ In this setup:
 - RabbitMQ uses these routing keys to deliver messages into the correct queue.  
 - Consumers are bound to specific queues and process messages independently.  
 
-### ✅ Pros
+## ✨ Features  
+- Supports different types of notifications (**Email, SMS, WhatsApp**)  
+- Configurable **retry policies** for each consumer  
+- **Dead Letter Queues (DLQ)** for failed messages  
+- **Priority queues** to process urgent messages first 
+
+
+## ✅ Pros
 - Simple to implement and maintain.  
 - Easy to extend (just add a new queue + routing key for a new channel).  
 - Centralized control → one exchange for all traffic.  
 - Decouples producers from consumers (producers don’t need to know queue names).  
 
-### ❌ Cons
+## ❌ Cons
 - No native priority handling → high-priority messages may get stuck behind low-priority ones.  
 - Single exchange could become a **bottleneck** under very high traffic.  
 - Harder to apply **per-channel scaling rules** (all messages pass through the same exchange).  
