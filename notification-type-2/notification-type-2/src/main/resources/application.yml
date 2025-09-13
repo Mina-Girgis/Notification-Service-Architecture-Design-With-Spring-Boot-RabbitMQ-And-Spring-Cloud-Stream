@@ -1,0 +1,52 @@
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  cloud:
+    stream:
+      defaultBinder: rabbit
+      function:
+        definition: highConsumer;normalConsumer;lowConsumer
+
+      bindings:
+        # HIGH PRIORITY channel
+        highConsumer-in-0:
+          destination: notification.high
+          group: high-group
+          binder: rabbit
+        # NORMAL PRIORITY channel
+        normalConsumer-in-0:
+          destination: notification.normal
+          group: normal-group
+          binder: rabbit
+        # LOW PRIORITY channel
+        lowConsumer-in-0:
+          destination: notification.low
+          group: low-group
+          binder: rabbit
+
+      rabbit:
+        bindings:
+          highConsumer-in-0:
+            consumer:
+              concurrency: 5    # more workers for high-priority
+              prefetch: 10
+              autoBindDlq: true
+              republishToDlq: true
+
+          normalConsumer-in-0:
+            consumer:
+              concurrency: 3
+              prefetch: 5
+              autoBindDlq: true
+              republishToDlq: true
+
+          lowConsumer-in-0:
+            consumer:
+              concurrency: 1    # fewer workers for low-priority
+              prefetch: 2
+              autoBindDlq: true
+              republishToDlq: true
