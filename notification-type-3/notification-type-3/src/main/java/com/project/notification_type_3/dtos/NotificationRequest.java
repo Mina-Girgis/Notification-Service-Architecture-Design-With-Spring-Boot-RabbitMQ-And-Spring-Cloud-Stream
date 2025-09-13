@@ -1,4 +1,4 @@
-package com.project.notification_type_1.dtos;
+package com.project.notification_type_3.dtos;
 import lombok.Data;
 
 @Data

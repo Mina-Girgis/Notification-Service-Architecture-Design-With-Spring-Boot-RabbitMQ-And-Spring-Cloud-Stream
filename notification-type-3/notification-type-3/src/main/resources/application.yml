@@ -1,0 +1,117 @@
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  cloud:
+    stream:
+      defaultBinder: rabbit
+      function:
+        definition: emailHighConsumer;emailNormalConsumer;emailLowConsumer;
+          smsHighConsumer;smsNormalConsumer;smsLowConsumer;
+          whatsappHighConsumer;whatsappNormalConsumer;whatsappLowConsumer
+
+      bindings:
+        # Email queues
+        emailHighConsumer-in-0:
+          destination: email.high
+          group: email-high-group
+          binder: rabbit
+        emailNormalConsumer-in-0:
+          destination: email.normal
+          group: email-normal-group
+          binder: rabbit
+        emailLowConsumer-in-0:
+          destination: email.low
+          group: email-low-group
+          binder: rabbit
+
+        # SMS queues
+        smsHighConsumer-in-0:
+          destination: sms.high
+          group: sms-high-group
+          binder: rabbit
+        smsNormalConsumer-in-0:
+          destination: sms.normal
+          group: sms-normal-group
+          binder: rabbit
+        smsLowConsumer-in-0:
+          destination: sms.low
+          group: sms-low-group
+          binder: rabbit
+
+        # WhatsApp queues
+        whatsappHighConsumer-in-0:
+          destination: whatsapp.high
+          group: whatsapp-high-group
+          binder: rabbit
+        whatsappNormalConsumer-in-0:
+          destination: whatsapp.normal
+          group: whatsapp-normal-group
+          binder: rabbit
+        whatsappLowConsumer-in-0:
+          destination: whatsapp.low
+          group: whatsapp-low-group
+          binder: rabbit
+
+      rabbit:
+        bindings:
+          # Example: configure concurrency & DLQ per queue
+          emailHighConsumer-in-0:
+            consumer:
+              concurrency: 5
+              prefetch: 10
+              autoBindDlq: true
+              republishToDlq: true
+          emailNormalConsumer-in-0:
+            consumer:
+              concurrency: 3
+              prefetch: 5
+              autoBindDlq: true
+              republishToDlq: true
+          emailLowConsumer-in-0:
+            consumer:
+              concurrency: 1
+              prefetch: 2
+              autoBindDlq: true
+              republishToDlq: true
+
+          smsHighConsumer-in-0:
+            consumer:
+              concurrency: 5
+              prefetch: 10
+              autoBindDlq: true
+              republishToDlq: true
+          smsNormalConsumer-in-0:
+            consumer:
+              concurrency: 3
+              prefetch: 5
+              autoBindDlq: true
+              republishToDlq: true
+          smsLowConsumer-in-0:
+            consumer:
+              concurrency: 1
+              prefetch: 2
+              autoBindDlq: true
+              republishToDlq: true
+
+          whatsappHighConsumer-in-0:
+            consumer:
+              concurrency: 5
+              prefetch: 10
+              autoBindDlq: true
+              republishToDlq: true
+          whatsappNormalConsumer-in-0:
+            consumer:
+              concurrency: 3
+              prefetch: 5
+              autoBindDlq: true
+              republishToDlq: true
+          whatsappLowConsumer-in-0:
+            consumer:
+              concurrency: 1
+              prefetch: 2
+              autoBindDlq: true
+              republishToDlq: true
