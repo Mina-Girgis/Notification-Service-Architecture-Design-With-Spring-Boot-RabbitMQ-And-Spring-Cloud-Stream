@@ -8,9 +8,9 @@ The service is designed to handle different workloads and scenarios by providing
 ---
 
 ## 🗂️ Index of Architectures
-1. [Type-1: Central Exchange with Routing Keys](#type-1-central-exchange-with-routing-keys)  
-2. [Type-2: High,normal and low channels](#type-2-dedicated-queues-per-producer)  
-3. [Type-3: Priority Queues with Dead Letter Handling](#type-3-priority-queues-with-dead-letter-handling)  
+1. [Type-1: Channel per type with priority](#type-1-channel-per-type-with-priority)  
+2. [Type-2: Three Priority Channels (High, Normal, Low)](#type-2-three-priority-channels-high-normal-low)  
+3. [Type-3: Separate queues per type + per priority](#type-3-separate-queues-per-type--per-priority)  
 
 ---
 
@@ -44,7 +44,7 @@ In this setup:
 
 ---
 ## 🏗️ Type-2: Three Priority Channels (High, Normal, Low)
-![Type-2 Architecture](./assets/type-2.png)
+![Type-2 Architecture](./assets/type2.png)
 In this design, we maintain **three separate queues and consumers**:
 
 - `notification.high` → handled by `highConsumer` (higher concurrency).
@@ -86,36 +86,61 @@ Each consumer can process **multiple notification types** (Email, SMS, WhatsApp)
 ---
 
 
-## 🔹 Type-3: Priority Queues with Dead Letter Handling
-![Type-3 Architecture](./assets/type-3.png)
+## 🔹 Type-3: Separate queues per type + per priority
+![Type-3 Architecture](./assets/type3.png)
 
-In this setup:
-- Messages are sent to the central exchange with **priority** headers.  
-- Each queue (`email`, `sms`, `whatsapp`) is configured with:  
-  - `x-max-priority` → ensures urgent messages are processed first.  
-  - `x-message-ttl` → controls message lifetime.  
-  - `DLQ (Dead Letter Queue)` → failed messages are rerouted for later inspection.  
-- Consumers use **retry policies with exponential backoff**.  
+## Type 3 Design (9 Queues)
 
-✅ **Best for:** **High throughput** and **mission-critical** notifications where priority and reliability matter.  
+- **EmailHigh, EmailNormal, EmailLow**  
+- **SMSHigh, SMSNormal, SMSLow**  
+- **WhatsAppHigh, WhatsAppNormal, WhatsAppLow**
+
+---
+**Flow:**  
+1. The producer sends a `NotificationRequest` with `type` (email, sms, whatsapp) and `priority` (high, normal, low).  
+2. The controller routes the message to the correct queue dynamically.  
+3. Each queue has its own consumer with configurable concurrency, retries, and DLQ.  
+4. Consumers process messages independently and can be assigned to different service providers per use case.  
+  
+---
+
+
+## Features
+
+- Handles **3 types of notifications**: Email, SMS, WhatsApp.  
+- **3 priority levels** per type: High, Normal, Low.  
+- **Independent scaling** per queue using concurrency and prefetch settings.  
+- **Retry and DLQ** per queue for robust error handling.  
+- **Priority isolation**: high-priority messages are not blocked by lower-priority messages.  
+- **Supports multiple service providers** per type based on use case (e.g., transactional vs marketing).  
+- Fully **decoupled producer-consumer** model.  
 
 ---
 
-## 🚀 Example Request
-```json
-POST /notifications/notify
-{
-  "recipient": "john@example.com",
-  "subject": "System Alert",
-  "message": "Your account needs verification",
-  "channel": "email",
-  "priority": 9
-}
-```
+## ✅ Pros
 
+- **Full priority separation**: High-priority messages are never blocked by lower-priority ones.  
+- **Independent scaling per queue**: Concurrency and prefetch can be tuned for each type and priority.  
+- **Per-queue retry and DLQ**: Failures are isolated and easier to monitor.  
+- **Predictable performance**: Guaranteed processing speed for high-priority queues.  
+- **Fine-grained control**: Configure retries, TTLs, concurrency, and prefetch per queue.  
+- **Supports multiple service providers**: Each queue can be handled by a different provider depending on use case.  
+- **Separation of concerns**: Each consumer handles a specific type + priority, simplifying monitoring and maintenance.  
 
+---
 
+## ❌ Cons
 
-## 📝 Note  
-This project is **not focused on implementation details**.  
-The main purpose is to demonstrate the **architectural approaches** and how to get the most benefit from **queues in RabbitMQ** when building a notification service.
+- **Infrastructure overhead**: 9 queues + 9 DLQs + multiple consumers increase complexity.  
+- **Producer responsibility**: Must correctly select the type and priority queue.  
+- **Resource imbalance**: High-priority workers may be idle while low-priority queues are full.  
+- **Limited dynamic reprioritization**: Low-priority messages cannot automatically jump to high-priority queues.  
+- **Scaling complexity**: Adding a new type or priority requires creating new queues and consumers.  
+- **Monitoring complexity**: More queues mean more metrics and DLQs to track.  
+
+---
+## Notes
+
+- This project focuses on **architecture design and queue optimization** rather than complete implementation.  
+- Message types, priorities, concurrency, retries, and DLQs can be adjusted for **real-world use cases**.  
+
