@@ -1,0 +1,93 @@
+spring:
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  cloud:
+    stream:
+      defaultBinder: rabbit
+      function:
+        definition: notificationProducer;emailConsumer;smsConsumer;whatsappConsumer
+
+      bindings:
+        # Producer output → goes to central exchange
+        notificationProducer-out-0:
+          destination: notification.exchange
+          binder: rabbit
+
+        # Email consumer binding
+        emailConsumer-in-0:
+          destination: notification.exchange     # bind to exchange, not queue directly
+          group: email-group
+          binder: rabbit
+          consumer:
+            maxAttempts: 5                 # retry 5 times
+            backOffInitialInterval: 1000   # 1s before first retry
+            backOffMaxInterval: 10000      # max 10s
+            backOffMultiplier: 2.0         # exponential backoff
+
+        # SMS consumer binding
+        smsConsumer-in-0:
+          destination: notification.exchange
+          group: sms-group
+          binder: rabbit
+          consumer:
+            maxAttempts: 5
+            backOffInitialInterval: 2000
+            backOffMaxInterval: 15000
+            backOffMultiplier: 2.0
+
+        # WhatsApp consumer binding
+        whatsappConsumer-in-0:
+          destination: notification.exchange
+          group: whatsapp-group
+          binder: rabbit
+          consumer:
+            maxAttempts: 2
+            backOffInitialInterval: 500
+            backOffMaxInterval: 5000
+            backOffMultiplier: 1.5
+
+      rabbit:
+        bindings:
+          notificationProducer-out-0:
+            producer:
+              declareExchange: true
+              exchangeType: direct
+              routingKeyExpression: headers['routingKey']
+
+          # Email queue
+          emailConsumer-in-0:
+            consumer:
+              queueNameGroupOnly: true
+              bindingRoutingKey: email   # bind queue to exchange with routing key "email"
+              autoBindDlq: true          # enable DLQ
+              republishToDlq: true       # failed messages go to <queue>.dlq
+              args:
+                x-max-priority: 9
+                x-message-ttl: 60000
+
+          # SMS queue
+          smsConsumer-in-0:
+            consumer:
+              queueNameGroupOnly: true
+              bindingRoutingKey: sms
+              autoBindDlq: true
+              republishToDlq: true
+              args:
+                x-max-priority: 9
+                x-message-ttl: 60000
+
+          # WhatsApp queue
+          whatsappConsumer-in-0:
+            consumer:
+              queueNameGroupOnly: true
+              bindingRoutingKey: whatsapp
+              autoBindDlq: true
+              republishToDlq: true
+              args:
+                x-max-priority: 9
+                x-message-ttl: 60000
