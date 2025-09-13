@@ -43,19 +43,48 @@ In this setup:
   
 
 ---
-
-## 🔹 Type-2: High, Normal, Low Channels
+## 🏗️ Type-2: Three Priority Channels (High, Normal, Low)
 ![Type-2 Architecture](./assets/type-2.png)
+In this design, we maintain **three separate queues and consumers**:
 
-In this setup:
-- Each producer sends messages directly to its own **dedicated queue** (e.g., `notification.email.queue`, `notification.sms.queue`).  
-- No central exchange is used; producers decide the target queue.  
-- Consumers listen to their respective queues.  
+- `notification.high` → handled by `highConsumer` (higher concurrency).
+- `notification.normal` → handled by `normalConsumer`.
+- `notification.low` → handled by `lowConsumer` (lower concurrency).
 
-✅ **Best for:** Workloads where **producers know the target channel** and traffic patterns are predictable.  
-⚡ Eliminates one routing step but reduces flexibility.  
+Each consumer can process **multiple notification types** (Email, SMS, WhatsApp), but the channel determines **priority**.
 
 ---
+
+
+## ✨ Features
+- Supports **different notification types**: Email, SMS, WhatsApp.
+- **Priority-based processing** (High, Normal, Low).
+- **Custom concurrency & prefetch** tuning per channel.
+- **Dead Letter Queues (DLQ)** for failed messages.
+- **Retry mechanism** with requeue/reprocess strategy.
+- **Scalable design** → each channel can be scaled independently.
+
+
+## ✅ Pros
+- **Strict priority isolation** → high-priority messages are never blocked by low-priority traffic.
+- **Custom concurrency per channel** → e.g., 5 workers for high, 3 for normal, 1 for low.
+- **Independent scaling** → scale consumers per channel depending on workload.
+- **Per-priority DLQ handling** → easier debugging and retries.
+- **Traffic resilience** → a spike in low-priority traffic won’t impact high-priority processing.
+- **At-least-once delivery** → thanks to consumer groups and RabbitMQ’s reliability.
+
+---
+
+## ❌ Cons
+- **Infrastructure overhead** → more queues, DLQs, and bindings to manage.
+- **Producer responsibility** → the sender must correctly choose the priority channel.
+- **Possible resource waste** → high-priority workers may sit idle while low-priority lags.
+- **No dynamic reprioritization** → once in `low`, a message can’t jump to `high` without re-publishing.
+- **Complex retry logic** → each priority has its own DLQ; retries need coordination.
+- **Risk of starvation** → low-priority traffic may be heavily delayed if high-priority is constant.
+
+---
+
 
 ## 🔹 Type-3: Priority Queues with Dead Letter Handling
 ![Type-3 Architecture](./assets/type-3.png)
