@@ -9,7 +9,7 @@ The service is designed to handle different workloads and scenarios by providing
 
 ## 🗂️ Index of Architectures
 1. [Type-1: Central Exchange with Routing Keys](#type-1-central-exchange-with-routing-keys)  
-2. [Type-2: Dedicated Queues per Producer](#type-2-dedicated-queues-per-producer)  
+2. [Type-2: High,normal and low channels](#type-2-dedicated-queues-per-producer)  
 3. [Type-3: Priority Queues with Dead Letter Handling](#type-3-priority-queues-with-dead-letter-handling)  
 
 ---
@@ -37,14 +37,14 @@ In this setup:
 - Decouples producers from consumers (producers don’t need to know queue names).  
 
 ## ❌ Cons
-- No native priority handling → high-priority messages may get stuck behind low-priority ones.  
+- Low-priority messages will still be delivered, but they can experience significant delays if high-priority traffic continues to dominate the queue. 
 - Single exchange could become a **bottleneck** under very high traffic.  
 - Harder to apply **per-channel scaling rules** (all messages pass through the same exchange).  
   
 
 ---
 
-## 🔹 Type-2: Dedicated Queues per Producer
+## 🔹 Type-2: High, Normal, Low Channels
 ![Type-2 Architecture](./assets/type-2.png)
 
 In this setup:
@@ -82,3 +82,11 @@ POST /notifications/notify
   "channel": "email",
   "priority": 9
 }
+```
+
+
+
+
+## 📝 Note  
+This project is **not focused on implementation details**.  
+The main purpose is to demonstrate the **architectural approaches** and how to get the most benefit from **queues in RabbitMQ** when building a notification service.
